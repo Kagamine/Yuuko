@@ -11,6 +11,7 @@ namespace Test.Models
         [WhereOptional("ID = $id")]
         public int ID { get; set; }
 
+        [SingleBy]
         [WhereOptional("Username = $name")]
         public string Username { get; set; }
 

@@ -14,7 +14,7 @@ namespace CodeComb.Yuuko.Schema
 
         public SelectAttribute(string Selector, params object[] Values)
         {
-            selector = Selector;
+            selector = Selector.Replace("'", "\"");
             values = Values;
         }
     }

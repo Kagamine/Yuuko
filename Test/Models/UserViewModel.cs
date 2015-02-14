@@ -22,8 +22,8 @@ namespace Test.Models
 
         public UserViewModel(dynamic Model)
         {
-            ID = Convert.ToInt32(Model.Identity);
-            Username = "Null"; 
+            ID = Model.MemberCount;
+            Username = Model.GroupName; 
         }
 
         public int ID { get; set; }

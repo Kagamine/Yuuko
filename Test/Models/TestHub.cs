@@ -12,20 +12,21 @@ namespace Test.Models
     {
         public TestYuukoContext()
         {
-            TestContext db = new TestContext();
-            UsersSource = db.Users;
+            DB = new TestContext();
+            UsersSource = DB.Users;
         }
 
+        [DbContext]
+        public TestContext DB { get; set; }
+
         [Binding("UsersSource")]
-        [OrderBy("ID desc")]
-        [Skip("$vskip")]
-        [Paging(10)]
+        [CollectionPort]
         public List<UserViewModel> Users { get; set; }
 
-        [OrderBy("ID asc")]
-        [Skip("$skip")]
-        [GroupBy("it['Password']","it")]
-        [Select("new(Key as GroupName)")]
+        [Binding("UsersSource")]
+        [DetailPort(DetailPortFunction.Edit ,DetailPortFunction.Delete, DetailPortFunction.Insert)]
+        public UserViewModel User { get; set; }
+
         public DbSet<User> UsersSource { get; set; }
     }
 }

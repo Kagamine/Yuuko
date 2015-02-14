@@ -14,7 +14,11 @@ namespace Test
         {
             AreaRegistration.RegisterAllAreas();
             RouteConfig.RegisterRoutes(RouteTable.Routes);
-            Yuuko.Register();
+        }
+
+        protected void Session_Start(object sender, EventArgs e)
+        {
+            Yuuko.RegisterSessonControl(Session);
         }
     }
 }

@@ -16,8 +16,8 @@ namespace CodeComb.Yuuko.Schema
 
         public GroupByAttribute(string KeySelector, string ElementSelector, params object[] Values)
         {
-            keySelector = KeySelector;
-            elementSelector = ElementSelector;
+            keySelector = KeySelector.Replace("'", "\""); ;
+            elementSelector = ElementSelector.Replace("'", "\""); ;
             values = Values;
         }
     }
