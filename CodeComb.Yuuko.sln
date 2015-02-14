@@ -5,7 +5,7 @@ VisualStudioVersion = 14.0.22310.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeComb.Yuuko", "CodeComb.Yuuko\CodeComb.Yuuko.csproj", "{212ABE3E-6605-4DB7-BE46-DC75EA62BFFC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeComb.Yuuko.Test", "CodeComb.Yuuko.Test\CodeComb.Yuuko.Test.csproj", "{C36788D9-17BE-468B-90FB-B940BE53FD9B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "Test\Test.csproj", "{2DAD4F9D-A729-4E9D-B20C-522BFB89C9FA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +17,10 @@ Global
 		{212ABE3E-6605-4DB7-BE46-DC75EA62BFFC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{212ABE3E-6605-4DB7-BE46-DC75EA62BFFC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{212ABE3E-6605-4DB7-BE46-DC75EA62BFFC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C36788D9-17BE-468B-90FB-B940BE53FD9B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C36788D9-17BE-468B-90FB-B940BE53FD9B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C36788D9-17BE-468B-90FB-B940BE53FD9B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C36788D9-17BE-468B-90FB-B940BE53FD9B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2DAD4F9D-A729-4E9D-B20C-522BFB89C9FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2DAD4F9D-A729-4E9D-B20C-522BFB89C9FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2DAD4F9D-A729-4E9D-B20C-522BFB89C9FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2DAD4F9D-A729-4E9D-B20C-522BFB89C9FA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

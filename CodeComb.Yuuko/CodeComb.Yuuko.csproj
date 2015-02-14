@@ -44,6 +44,8 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Data.Entity" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -51,12 +53,36 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Class1.cs" />
+    <Compile Include="Helpers\ExpressionHelper.cs" />
+    <Compile Include="Hubs\ReflectionHelper.cs" />
+    <Compile Include="Linq.cs" />
+    <Compile Include="Owin\Middleware\MapRoutesMiddleware.cs" />
+    <Compile Include="Schema\AccessToAttribute.cs" />
+    <Compile Include="Schema\BindingAttribute.cs" />
+    <Compile Include="Schema\DataSourceAttribute.cs" />
+    <Compile Include="Schema\GroupByAttribute.cs" />
+    <Compile Include="Schema\OrderByAttribute.cs" />
+    <Compile Include="Schema\PagingAttribute.cs" />
+    <Compile Include="Schema\SelectAttribute.cs" />
+    <Compile Include="Schema\SkipAttribute.cs" />
+    <Compile Include="Schema\TakeAttribute.cs" />
+    <Compile Include="Schema\WhereAttribute.cs" />
+    <Compile Include="Schema\WhereOptionalAttribute.cs" />
+    <Compile Include="Yuuko.cs" />
+    <Compile Include="YuukoContext.cs" />
     <Compile Include="Owin\OwinExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Service References\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Exceptions\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
