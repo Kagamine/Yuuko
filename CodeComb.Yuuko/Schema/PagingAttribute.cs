@@ -10,9 +10,12 @@ namespace CodeComb.Yuuko.Schema
     {
         public int pageSize;
 
-        public PagingAttribute(int PageSize)
+        public string requestKey;
+
+        public PagingAttribute(string RequestKey, int PageSize)
         {
             pageSize = PageSize;
+            requestKey = RequestKey;
         }
     }
 }

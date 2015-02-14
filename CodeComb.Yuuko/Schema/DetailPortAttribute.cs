@@ -18,7 +18,7 @@ namespace CodeComb.Yuuko.Schema
 
         public DetailPortAttribute(params DetailPortFunction[] DetailPortFunction)
         {
-            detailPortFunctions = DetailPortFunction;
+            detailPortFunctions = DetailPortFunction.Distinct().ToArray();
         }
     }
 }

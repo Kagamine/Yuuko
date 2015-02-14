@@ -40,7 +40,7 @@ namespace Owin
                 var Instance = Activator.CreateInstance(ContextType);
                 Properties = Instance.GetType().GetProperties();
                 #endregion
-                #region 获取型逻辑处理
+                #region GET型逻辑处理
                 foreach (var p in Properties) //遍历上下文属性
                 {
                     var BindingAttribute = p.GetCustomAttribute<BindingAttribute>(); //获取数据源绑定特性
@@ -116,6 +116,13 @@ namespace Owin
                                         tmp = tmp.OrderBy(DataSourceOrderByAttribute.ordering);
                                     }
                                     #endregion
+                                    #region Select特性处理
+                                    var DataSourceSelectAttribute = DataSourceType.GetCustomAttribute<SelectAttribute>();
+                                    if (DataSourceSelectAttribute != null)
+                                    {
+                                        tmp = tmp.Select(DataSourceSelectAttribute.selector, DataSourceSelectAttribute.values);
+                                    }
+                                    #endregion
                                     #region Skip特性处理
                                     var DataSourceSkipAttribute = DataSourceType.GetCustomAttribute<SkipAttribute>();
                                     if (DataSourceSkipAttribute != null)
@@ -158,11 +165,12 @@ namespace Owin
                                         }
                                     }
                                     #endregion
-                                    #region Select特性处理
-                                    var DataSourceSelectAttribute = DataSourceType.GetCustomAttribute<SelectAttribute>();
-                                    if (DataSourceSelectAttribute != null)
+                                    #region Paging特性处理
+                                    var DataSourcePagingAttribute = DataSourceType.GetCustomAttribute<PagingAttribute>();
+                                    if (DataSourcePagingAttribute != null)
                                     {
-                                        tmp = tmp.Select(DataSourceSelectAttribute.selector, DataSourceSelectAttribute.values);
+                                        var Page = int.Parse(QueryString[DataSourcePagingAttribute.requestKey]);
+                                        tmp = tmp.Skip(Page).Take(DataSourcePagingAttribute.pageSize);
                                     }
                                     #endregion
                                     #region 输出JSON
@@ -187,6 +195,13 @@ namespace Owin
                                         if (ViewsCollectionOrderByAttribute != null)
                                         {
                                             ret = ret.OrderBy(ViewsCollectionOrderByAttribute.ordering, ViewsCollectionOrderByAttribute.values);
+                                        }
+                                        #endregion
+                                        #region 处理针对视图模型集合的Select
+                                        var ViewsCollectionSelectAttribute = p.GetCustomAttribute<SelectAttribute>();
+                                        if (ViewsCollectionSelectAttribute != null)
+                                        {
+                                            ret = ret.Select(ViewsCollectionSelectAttribute.selector, ViewsCollectionSelectAttribute.values);
                                         }
                                         #endregion
                                         #region 处理针对视图模型集合的Skip
@@ -231,11 +246,12 @@ namespace Owin
                                             }
                                         }
                                         #endregion
-                                        #region 处理针对视图模型集合的Select
-                                        var ViewsCollectionSelectAttribute = p.GetCustomAttribute<SelectAttribute>();
-                                        if (ViewsCollectionTakeAttribute != null)
+                                        #region 处理针对视图模型集合的Paging
+                                        var ViewsCollectionPaggingAttribute = DataSourceType.GetCustomAttribute<PagingAttribute>();
+                                        if (ViewsCollectionPaggingAttribute != null)
                                         {
-                                            ret = ret.Select(ViewsCollectionSelectAttribute.selector, ViewsCollectionSelectAttribute.values);
+                                            var Page = int.Parse(QueryString[ViewsCollectionPaggingAttribute.requestKey]);
+                                            tmp = tmp.Skip(Page).Take(ViewsCollectionPaggingAttribute.pageSize);
                                         }
                                         #endregion
                                     }
@@ -294,7 +310,7 @@ namespace Owin
                     }
                 }
                 #endregion
-                #region 数据操作型逻辑处理
+                #region SET型逻辑处理
                 foreach (var p in Properties.Where(x => x.GetCustomAttribute<DetailPortAttribute>() != null))
                 {
                     #region 分析Yuuko上下文
@@ -305,7 +321,6 @@ namespace Owin
                                           select ds).Single();
                     var DataSource = DataSourceType.GetValue(Instance);
                     var DataModel = DataSource.GetType().GetGenericArguments().Single();
-                    string Json = "";
                     var Attributes = p.GetCustomAttributes(); //获取该Port的所有特性
                     var AccessToAttribute = (from a in Attributes
                                              where a.GetType().BaseType == typeof(AccessToAttribute)
@@ -449,6 +464,78 @@ namespace Owin
                             });
                         });
                     }
+                    #endregion
+                    #region 处理修改操作
+                    builder.Map("/yuuko/sets/" + p.Name + "/Delete", innerApp =>
+                    {
+                        innerApp.Run(cxt => {
+                            #region 处理请求
+                            if (AccessToAttribute != null)//处理权限校验逻辑
+                            {
+                                Type AccessToAttributeType = typeof(AccessToAttribute);
+                                var flag = (bool)AccessToAttributeType.GetMethod("AccessCore").Invoke(AccessToAttribute, new object[] { cxt.Authentication.User }); //调用AccessCore校验
+                                if (!flag)
+                                {
+                                    cxt.Response.ContentType = "text/json";
+                                    return cxt.Response.WriteAsync("null");
+                                }
+                            }
+                            var tmp = ((IEnumerable)DataSource);
+                            var frm = cxt.Request.ReadFormAsync();
+                            frm.Wait();
+                            var Form = frm.Result;
+                            var YuukoToken = Form.Get("YuukoToken");
+                            if (HttpContext.Current.Session["YuukoToken"] == null || YuukoToken != HttpContext.Current.Session["YuukoToken"].ToString())
+                                throw new YuukoTokenException();
+                            #endregion
+                            #region 处理SingleBy特性
+                            var SingleByAttribute = KeyField.GetCustomAttribute<SingleByAttribute>();
+                            string requestKey = Form.Get(SingleByAttribute.requestKey.Trim('$'));
+                            tmp = tmp.Where(KeyField.Name + " =@0", Convert.ChangeType(requestKey, KeyField.PropertyType));
+                            var tmp2 = ((IEnumerable<dynamic>)tmp).SingleOrDefault();
+                            if (tmp2 == null)
+                            {
+                                cxt.Response.ContentType = "text/json";
+
+                                return cxt.Response.WriteAsync("false");
+                            }
+                            #endregion
+                            #region 修改操作
+                            var ItemProperties = ((object)tmp2).GetType().GetProperties();
+                            foreach (var ip in ItemProperties)
+                            {
+                                if (Form.Get(ip.Name) != null)
+                                {
+                                    if (ip.PropertyType == typeof(string))
+                                    {
+                                        ip.SetValue(tmp2, Form.Get(ip.Name).ToString());
+                                    }
+                                    else
+                                    {
+                                        ip.SetValue(tmp2, Convert.ChangeType(Form.Get(ip.Name).ToString(), ip.PropertyType));
+                                    }
+                                }
+                            }
+                            var DbContext = (from pro in Properties
+                                             where pro.GetCustomAttribute<DbContextAttribute>() != null
+                                             select pro).SingleOrDefault();
+                            if (DbContext != null)
+                            {
+                                cxt.Response.ContentType = "text/json";
+                                try
+                                {
+                                    DbContext.PropertyType.GetMethod("SaveChanges").Invoke(DbContext.GetValue(Instance), null);
+                                }
+                                catch
+                                {
+                                    return cxt.Response.WriteAsync("false");
+                                }
+                                return cxt.Response.WriteAsync("true");
+                            }
+                            #endregion
+                            return Task.FromResult(0);
+                        });
+                    });
                     #endregion
                 }
                 #endregion
