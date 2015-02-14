@@ -25,7 +25,7 @@ namespace CodeComb.Yuuko.Schema
         public TakeAttribute(string RequestKey, int DefaultTakeCount)
         {
             requestKey = RequestKey;
-            defaultTakeCount = TakeCount;
+            defaultTakeCount = DefaultTakeCount;
         }
     }
 }

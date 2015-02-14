@@ -126,6 +126,34 @@ namespace Owin
                                         }
                                     }
                                     #endregion
+                                    #region Take特性处理
+                                    var DataSourceTakeAttribute = DataSourceType.GetCustomAttribute<TakeAttribute>();
+                                    if (DataSourceTakeAttribute != null)
+                                    {
+                                        if (DataSourceTakeAttribute.requestKey == null || QueryString[DataSourceTakeAttribute.requestKey.Trim('$')] == null)
+                                        {
+                                            if (DataSourceSkipAttribute.defaultSkipCount < 0)
+                                            {
+                                                throw new ArgumentNullException(QueryString[DataSourceTakeAttribute.requestKey.Trim('$')]);
+                                            }
+                                            else
+                                            {
+                                                tmp = tmp.Take(DataSourceTakeAttribute.defaultTakeCount);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            tmp = tmp.Take(int.Parse(QueryString[DataSourceTakeAttribute.requestKey.Trim('$')]));
+                                        }
+                                    }
+                                    #endregion
+                                    #region Select特性处理
+                                    var DataSourceSelectAttribute = DataSourceType.GetCustomAttribute<SelectAttribute>();
+                                    if (DataSourceSelectAttribute != null)
+                                    {
+                                        tmp = tmp.Select(DataSourceSelectAttribute.selector, DataSourceSelectAttribute.values);
+                                    }
+                                    #endregion
                                     #region 输出JSON
                                     tmp = ((IEnumerable<object>)tmp).ToList();
                                     //考虑是否需要转换为视图模型
@@ -143,7 +171,7 @@ namespace Owin
                                             ret = ret.OrderBy(ViewsCollectionOrderByAttribute.ordering, ViewsCollectionOrderByAttribute.values);
                                         }
                                         #endregion
-                                        #region 处理针对视图模型的Skip
+                                        #region 处理针对视图模型集合的Skip
                                         var ViewsCollectionSkipAttribute = p.GetCustomAttribute<SkipAttribute>();
                                         if (ViewsCollectionSkipAttribute != null)
                                         {
@@ -162,6 +190,34 @@ namespace Owin
                                             {
                                                 ret = ret.Skip(int.Parse(QueryString[ViewsCollectionSkipAttribute.requestKey.Trim('$')]));
                                             }
+                                        }
+                                        #endregion
+                                        #region 处理针对视图模型集合的Take
+                                        var ViewsCollectionTakeAttribute = p.GetCustomAttribute<TakeAttribute>();
+                                        if (ViewsCollectionTakeAttribute != null)
+                                        {
+                                            if (ViewsCollectionTakeAttribute.requestKey == null || QueryString[ViewsCollectionTakeAttribute.requestKey.Trim('$')] == null)
+                                            {
+                                                if (ViewsCollectionTakeAttribute.defaultTakeCount < 0)
+                                                {
+                                                    throw new ArgumentNullException(QueryString[ViewsCollectionTakeAttribute.requestKey.Trim('$')]);
+                                                }
+                                                else
+                                                {
+                                                    ret = ret.Take(ViewsCollectionTakeAttribute.defaultTakeCount);
+                                                }
+                                            }
+                                            else
+                                            {
+                                                ret = ret.Take(int.Parse(QueryString[ViewsCollectionTakeAttribute.requestKey.Trim('$')]));
+                                            }
+                                        }
+                                        #endregion
+                                        #region 处理针对视图模型集合的Select
+                                        var ViewsCollectionSelectAttribute = p.GetCustomAttribute<SelectAttribute>();
+                                        if (ViewsCollectionTakeAttribute != null)
+                                        {
+                                            ret = ret.Select(DataSourceSelectAttribute.selector, DataSourceSelectAttribute.values);
                                         }
                                         #endregion
                                     }

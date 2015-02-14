@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace CodeComb.Yuuko.Schema
 {
-    public class GroupByAttribute
+    public class GroupByAttribute : Attribute
     {
         public string keySelector;
 

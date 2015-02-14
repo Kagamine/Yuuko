@@ -24,6 +24,8 @@ namespace Test.Models
 
         [OrderBy("ID asc")]
         [Skip("$skip")]
+        [GroupBy("it['Password']","it")]
+        [Select("new(Key as GroupName)")]
         public DbSet<User> UsersSource { get; set; }
     }
 }
