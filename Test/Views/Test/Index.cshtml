@@ -3,16 +3,10 @@
     ViewBag.Title = "View";
 }
 
-<form action="/Yuuko/sets/User/Insert" method="post">
-    <input type="text" placeholder="id" name="ID" id="ssadsa" />
-    <input type="text" placeholder="username" name="Username" id="test" />
-    <input type="text" placeholder="password" name="Password" id="" />
-    <input type="hidden" name="YuukoToken" value="@Session["YuukoToken"]" />
-    <input type="submit" />
-</form>
+<div data-collection="Users" data-identifier="ID">
+    <p class="template users"><span data-field="ID"></span><span data-field="Username"></span><span data-field="Password"></span></p>
+</div>
 
 <script>
-    $("#test").text("123");
-    $("#test").html("123");
-    $("#test").val("123");
+    LoadFromCollectionPort("Users", null);
 </script>

@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Web;
 using System.Web.SessionState;
 using System.Threading.Tasks;
+using System.Text;
 using Newtonsoft.Json;
 using Microsoft.Owin.Extensions;
 using CodeComb.Yuuko;
@@ -23,24 +24,24 @@ namespace Owin
         public static IAppBuilder MapYuuko(this IAppBuilder builder)
         {
             builder.RequireAspNetSession();
-            return builder.Map("/yuuko/gets", app => {
-                #region 获取Yuuko上下文
-                //获取程序集
-                var assemblies = (from t in AppDomain.CurrentDomain.GetAssemblies()
-                                  select t);
-                Type ContextType = null;
-                foreach (var asm in assemblies)
-                {
-                    var classes = (from t in asm.GetTypes()
-                                   where t.IsClass && t.BaseType == typeof(YuukoContext)
-                                   select t).SingleOrDefault();
-                    if (classes != null)
-                        ContextType = classes;
-                }
-                var Instance = Activator.CreateInstance(ContextType);
-                Properties = Instance.GetType().GetProperties();
-                #endregion
-                #region GET型逻辑处理
+            #region 获取Yuuko上下文
+            //获取程序集
+            var assemblies = (from t in AppDomain.CurrentDomain.GetAssemblies()
+                              select t);
+            Type ContextType = null;
+            foreach (var asm in assemblies)
+            {
+                var classes = (from t in asm.GetTypes()
+                               where t.IsClass && t.BaseType == typeof(YuukoContext)
+                               select t).SingleOrDefault();
+                if (classes != null)
+                    ContextType = classes;
+            }
+            var Instance = Activator.CreateInstance(ContextType);
+            Properties = Instance.GetType().GetProperties();
+            #endregion
+            #region GET型逻辑处理
+            builder.Map("/yuuko/gets", app => {
                 foreach (var p in Properties) //遍历上下文属性
                 {
                     var BindingAttribute = p.GetCustomAttribute<BindingAttribute>(); //获取数据源绑定特性
@@ -309,163 +310,36 @@ namespace Owin
                         });
                     }
                 }
+            });
+            #endregion
+            #region SET型逻辑处理
+            foreach (var p in Properties.Where(x => x.GetCustomAttribute<DetailPortAttribute>() != null))
+            {
+                #region 分析Yuuko上下文
+                var BindingAttribute = p.GetCustomAttribute<BindingAttribute>(); //获取数据源绑定特性
+                                                                                 //获取数据源
+                var DataSourceType = (from ds in Properties
+                                      where ds.Name == BindingAttribute._DataSource
+                                      select ds).Single();
+                var DataSource = DataSourceType.GetValue(Instance);
+                var DataModel = DataSource.GetType().GetGenericArguments().Single();
+                var Attributes = p.GetCustomAttributes(); //获取该Port的所有特性
+                var AccessToAttribute = (from a in Attributes
+                                         where a.GetType().BaseType == typeof(AccessToAttribute)
+                                         select a).SingleOrDefault(); //获取AccessTo特性
                 #endregion
-                #region SET型逻辑处理
-                foreach (var p in Properties.Where(x => x.GetCustomAttribute<DetailPortAttribute>() != null))
+                #region 准备数据
+                var DetailPortAttribute = p.GetCustomAttribute<DetailPortAttribute>();
+                var ViewModelType = p.PropertyType;
+                var fields = from f in DataModel.GetProperties()
+                             select f;//获取数据模型字段
+                var KeyField = (from f in fields
+                                where f.GetCustomAttribute<SingleByAttribute>() != null
+                                select f).Single();
+                #endregion
+                #region 处理删除操作
+                if (DetailPortAttribute.detailPortFunctions.Contains(DetailPortFunction.Delete))
                 {
-                    #region 分析Yuuko上下文
-                    var BindingAttribute = p.GetCustomAttribute<BindingAttribute>(); //获取数据源绑定特性
-                    //获取数据源
-                    var DataSourceType = (from ds in Properties
-                                          where ds.Name == BindingAttribute._DataSource
-                                          select ds).Single();
-                    var DataSource = DataSourceType.GetValue(Instance);
-                    var DataModel = DataSource.GetType().GetGenericArguments().Single();
-                    var Attributes = p.GetCustomAttributes(); //获取该Port的所有特性
-                    var AccessToAttribute = (from a in Attributes
-                                             where a.GetType().BaseType == typeof(AccessToAttribute)
-                                             select a).SingleOrDefault(); //获取AccessTo特性
-                    #endregion
-                    #region 准备数据
-                    var DetailPortAttribute = p.GetCustomAttribute<DetailPortAttribute>();
-                    var ViewModelType = p.PropertyType;
-                    var fields = from f in DataModel.GetProperties()
-                                 select f;//获取数据模型字段
-                    var KeyField = (from f in fields
-                                    where f.GetCustomAttribute<SingleByAttribute>() != null
-                                    select f).Single();
-                    #endregion
-                    #region 处理删除操作
-                    if (DetailPortAttribute.detailPortFunctions.Contains(DetailPortFunction.Delete))
-                    {
-                        builder.Map("/yuuko/sets/" + p.Name+ "/Delete", innerApp=>
-                        {
-                            innerApp.Run(cxt => {
-                                #region 处理请求
-                                if (AccessToAttribute != null)//处理权限校验逻辑
-                                {
-                                    Type AccessToAttributeType = typeof(AccessToAttribute);
-                                    var flag = (bool)AccessToAttributeType.GetMethod("AccessCore").Invoke(AccessToAttribute, new object[] { cxt.Authentication.User }); //调用AccessCore校验
-                                    if (!flag)
-                                    {
-                                        cxt.Response.ContentType = "text/json";
-                                        return cxt.Response.WriteAsync("null");
-                                    }
-                                }
-                                var tmp = ((IEnumerable)DataSource);
-                                var frm = cxt.Request.ReadFormAsync();
-                                frm.Wait();
-                                var Form = frm.Result;
-                                var YuukoToken = Form.Get("YuukoToken");
-                                if (HttpContext.Current.Session["YuukoToken"] == null || YuukoToken != HttpContext.Current.Session["YuukoToken"].ToString())
-                                    throw new YuukoTokenException();
-                                #endregion
-                                #region 处理SingleBy特性
-                                var SingleByAttribute = KeyField.GetCustomAttribute<SingleByAttribute>();
-                                string requestKey = Form.Get(SingleByAttribute.requestKey.Trim('$'));
-                                tmp = tmp.Where(KeyField.Name + " =@0", Convert.ChangeType(requestKey, KeyField.PropertyType));
-                                var tmp2 = ((IEnumerable<dynamic>)tmp).SingleOrDefault();
-                                if (tmp2 == null)
-                                {
-                                    cxt.Response.ContentType = "text/json";
-                                    
-                                    return cxt.Response.WriteAsync("false");
-                                }
-                                #endregion
-                                #region 删除操作
-                                DataSource.GetType().GetMethod("Remove").Invoke(DataSource, new object[] { tmp2 });
-                                var DbContext = (from pro in Properties
-                                                 where pro.GetCustomAttribute<DbContextAttribute>() != null
-                                                 select pro).SingleOrDefault();
-                                if (DbContext != null)
-                                {
-                                    cxt.Response.ContentType = "text/json";
-                                    try
-                                    {
-                                        DbContext.PropertyType.GetMethod("SaveChanges").Invoke(DbContext.GetValue(Instance), null);
-                                    }
-                                    catch
-                                    {
-                                        return cxt.Response.WriteAsync("false");
-                                    }
-                                    return cxt.Response.WriteAsync("true");
-                                }
-                                #endregion
-                                return Task.FromResult(0);
-                            });
-                        });
-                    }
-                    #endregion
-                    #region 处理添加操作
-                    if (DetailPortAttribute.detailPortFunctions.Contains(DetailPortFunction.Insert))
-                    {
-                        builder.Map("/yuuko/sets/" + p.Name + "/Insert", innerApp =>
-                        {
-                            innerApp.Run(cxt => {
-                                #region 处理请求
-                                if (AccessToAttribute != null)//处理权限校验逻辑
-                                {
-                                    Type AccessToAttributeType = typeof(AccessToAttribute);
-                                    var flag = (bool)AccessToAttributeType.GetMethod("AccessCore").Invoke(AccessToAttribute, new object[] { cxt.Authentication.User }); //调用AccessCore校验
-                                    if (!flag)
-                                    {
-                                        cxt.Response.ContentType = "text/json";
-                                        return cxt.Response.WriteAsync("null");
-                                    }
-                                }
-                                var tmp = ((IEnumerable)DataSource);
-                                var frm = cxt.Request.ReadFormAsync();
-                                frm.Wait();
-                                var Form = frm.Result;
-                                var YuukoToken = Form.Get("YuukoToken");
-                                if (HttpContext.Current.Session["YuukoToken"] == null || YuukoToken != HttpContext.Current.Session["YuukoToken"].ToString())
-                                    throw new YuukoTokenException();
-                                #endregion
-                                #region 插入操作
-                                var NewItem = Activator.CreateInstance(DataModel);
-                                var NewItemProperties = NewItem.GetType().GetProperties();
-                                foreach (var np in NewItemProperties)
-                                {
-                                    if (Form.Get(np.Name) != null)
-                                    {
-                                        if (np.PropertyType == typeof(string))
-                                        {
-                                            np.SetValue(NewItem, Form.Get(np.Name).ToString());
-                                        }
-                                        else
-                                        {
-                                            np.SetValue(NewItem, Convert.ChangeType(Form.Get(np.Name).ToString(), np.PropertyType));
-                                        }
-                                    }
-                                    else if (np.PropertyType == typeof(Guid)) //特别处理一下GUID问题
-                                    {
-                                        np.SetValue(NewItem, Guid.NewGuid());
-                                    }
-                                }
-                                DataSource.GetType().GetMethod("Add").Invoke(DataSource, new object[] { NewItem });
-                                var DbContext = (from pro in Properties
-                                                 where pro.GetCustomAttribute<DbContextAttribute>() != null
-                                                 select pro).SingleOrDefault();
-                                if (DbContext != null)
-                                {
-                                    cxt.Response.ContentType = "text/json";
-                                    try
-                                    {
-                                        DbContext.PropertyType.GetMethod("SaveChanges").Invoke(DbContext.GetValue(Instance), null);
-                                    }
-                                    catch
-                                    {
-                                        return cxt.Response.WriteAsync("false");
-                                    }
-                                    return cxt.Response.WriteAsync("true");
-                                }
-                                #endregion
-                                return Task.FromResult(0);
-                            });
-                        });
-                    }
-                    #endregion
-                    #region 处理修改操作
                     builder.Map("/yuuko/sets/" + p.Name + "/Delete", innerApp =>
                     {
                         innerApp.Run(cxt => {
@@ -500,22 +374,8 @@ namespace Owin
                                 return cxt.Response.WriteAsync("false");
                             }
                             #endregion
-                            #region 修改操作
-                            var ItemProperties = ((object)tmp2).GetType().GetProperties();
-                            foreach (var ip in ItemProperties)
-                            {
-                                if (Form.Get(ip.Name) != null)
-                                {
-                                    if (ip.PropertyType == typeof(string))
-                                    {
-                                        ip.SetValue(tmp2, Form.Get(ip.Name).ToString());
-                                    }
-                                    else
-                                    {
-                                        ip.SetValue(tmp2, Convert.ChangeType(Form.Get(ip.Name).ToString(), ip.PropertyType));
-                                    }
-                                }
-                            }
+                            #region 删除操作
+                            DataSource.GetType().GetMethod("Remove").Invoke(DataSource, new object[] { tmp2 });
                             var DbContext = (from pro in Properties
                                              where pro.GetCustomAttribute<DbContextAttribute>() != null
                                              select pro).SingleOrDefault();
@@ -536,10 +396,194 @@ namespace Owin
                             return Task.FromResult(0);
                         });
                     });
-                    #endregion
                 }
                 #endregion
+                #region 处理添加操作
+                if (DetailPortAttribute.detailPortFunctions.Contains(DetailPortFunction.Insert))
+                {
+                    builder.Map("/yuuko/sets/" + p.Name + "/Insert", innerApp =>
+                    {
+                        innerApp.Run(cxt => {
+                            #region 处理请求
+                            if (AccessToAttribute != null)//处理权限校验逻辑
+                            {
+                                Type AccessToAttributeType = typeof(AccessToAttribute);
+                                var flag = (bool)AccessToAttributeType.GetMethod("AccessCore").Invoke(AccessToAttribute, new object[] { cxt.Authentication.User }); //调用AccessCore校验
+                                if (!flag)
+                                {
+                                    cxt.Response.ContentType = "text/json";
+                                    return cxt.Response.WriteAsync("null");
+                                }
+                            }
+                            var tmp = ((IEnumerable)DataSource);
+                            var frm = cxt.Request.ReadFormAsync();
+                            frm.Wait();
+                            var Form = frm.Result;
+                            var YuukoToken = Form.Get("YuukoToken");
+                            if (HttpContext.Current.Session["YuukoToken"] == null || YuukoToken != HttpContext.Current.Session["YuukoToken"].ToString())
+                                throw new YuukoTokenException();
+                            #endregion
+                            #region 插入操作
+                            var NewItem = Activator.CreateInstance(DataModel);
+                            var NewItemProperties = NewItem.GetType().GetProperties();
+                            foreach (var np in NewItemProperties)
+                            {
+                                if (Form.Get(np.Name) != null)
+                                {
+                                    if (np.PropertyType == typeof(string))
+                                    {
+                                        np.SetValue(NewItem, Form.Get(np.Name).ToString());
+                                    }
+                                    else
+                                    {
+                                        np.SetValue(NewItem, Convert.ChangeType(Form.Get(np.Name).ToString(), np.PropertyType));
+                                    }
+                                }
+                                else if (np.PropertyType == typeof(Guid)) //特别处理一下GUID问题
+                                {
+                                    np.SetValue(NewItem, Guid.NewGuid());
+                                }
+                            }
+                            DataSource.GetType().GetMethod("Add").Invoke(DataSource, new object[] { NewItem });
+                            var DbContext = (from pro in Properties
+                                             where pro.GetCustomAttribute<DbContextAttribute>() != null
+                                             select pro).SingleOrDefault();
+                            if (DbContext != null)
+                            {
+                                cxt.Response.ContentType = "text/json";
+                                try
+                                {
+                                    DbContext.PropertyType.GetMethod("SaveChanges").Invoke(DbContext.GetValue(Instance), null);
+                                }
+                                catch
+                                {
+                                    return cxt.Response.WriteAsync("false");
+                                }
+                                return cxt.Response.WriteAsync("true");
+                            }
+                            #endregion
+                            return Task.FromResult(0);
+                        });
+                    });
+                }
+                #endregion
+                #region 处理修改操作
+                builder.Map("/yuuko/sets/" + p.Name + "/Delete", innerApp =>
+                {
+                    innerApp.Run(cxt => {
+                        #region 处理请求
+                        if (AccessToAttribute != null)//处理权限校验逻辑
+                        {
+                            Type AccessToAttributeType = typeof(AccessToAttribute);
+                            var flag = (bool)AccessToAttributeType.GetMethod("AccessCore").Invoke(AccessToAttribute, new object[] { cxt.Authentication.User }); //调用AccessCore校验
+                            if (!flag)
+                            {
+                                cxt.Response.ContentType = "text/json";
+                                return cxt.Response.WriteAsync("null");
+                            }
+                        }
+                        var tmp = ((IEnumerable)DataSource);
+                        var frm = cxt.Request.ReadFormAsync();
+                        frm.Wait();
+                        var Form = frm.Result;
+                        var YuukoToken = Form.Get("YuukoToken");
+                        if (HttpContext.Current.Session["YuukoToken"] == null || YuukoToken != HttpContext.Current.Session["YuukoToken"].ToString())
+                            throw new YuukoTokenException();
+                        #endregion
+                        #region 处理SingleBy特性
+                        var SingleByAttribute = KeyField.GetCustomAttribute<SingleByAttribute>();
+                        string requestKey = Form.Get(SingleByAttribute.requestKey.Trim('$'));
+                        tmp = tmp.Where(KeyField.Name + " =@0", Convert.ChangeType(requestKey, KeyField.PropertyType));
+                        var tmp2 = ((IEnumerable<dynamic>)tmp).SingleOrDefault();
+                        if (tmp2 == null)
+                        {
+                            cxt.Response.ContentType = "text/json";
+
+                            return cxt.Response.WriteAsync("false");
+                        }
+                        #endregion
+                        #region 修改操作
+                        var ItemProperties = ((object)tmp2).GetType().GetProperties();
+                        foreach (var ip in ItemProperties)
+                        {
+                            if (Form.Get(ip.Name) != null)
+                            {
+                                if (ip.PropertyType == typeof(string))
+                                {
+                                    ip.SetValue(tmp2, Form.Get(ip.Name).ToString());
+                                }
+                                else
+                                {
+                                    ip.SetValue(tmp2, Convert.ChangeType(Form.Get(ip.Name).ToString(), ip.PropertyType));
+                                }
+                            }
+                        }
+                        var DbContext = (from pro in Properties
+                                         where pro.GetCustomAttribute<DbContextAttribute>() != null
+                                         select pro).SingleOrDefault();
+                        if (DbContext != null)
+                        {
+                            cxt.Response.ContentType = "text/json";
+                            try
+                            {
+                                DbContext.PropertyType.GetMethod("SaveChanges").Invoke(DbContext.GetValue(Instance), null);
+                            }
+                            catch
+                            {
+                                return cxt.Response.WriteAsync("false");
+                            }
+                            return cxt.Response.WriteAsync("true");
+                        }
+                        #endregion
+                        return Task.FromResult(0);
+                    });
+                });
+                #endregion
+            }
+            #endregion
+            #region 生成前台js
+            return builder.Map("/yuuko/js", app => {
+                app.Run(cxt=>
+                {
+                    cxt.Response.ContentType = "application/x-javascript";
+                    StringBuilder js = new StringBuilder();
+                    cxt.Response.Write(string.Format("var YuukoToken = \"{0}\";\r\n", HttpContext.Current.Session["YuukoToken"].ToString()));
+                    js.AppendLine("var lock = false;");
+                    js.AppendLine("var CurrentPage = 0;");
+                    js.AppendLine("function LoadFromCollectionPort(port, obj, func) {");
+                    js.AppendLine("    if(lock) return;");
+                    js.AppendLine("    lock = true;");
+                    js.AppendLine("    yuukoOnLoading();");
+                    js.AppendLine("    obj.YuukoToken = YuukoToken;");
+                    js.AppendLine("    $.getJSON('/yuuko/gets/' + port, obj, function(data) {");
+                    js.AppendLine("        if(data.length == 0) lock = true;");
+                    js.AppendLine("            $('[data-collection=\"'+port\"]')");
+                    js.AppendLine("        yuukoOnLoaded();");
+                    js.AppendLine("        lock = false;");
+                    js.AppendLine("    });");
+                    js.AppendLine("}");
+                    #region 生成CollectionPort相关的Javascript
+                    foreach (var p in Properties.Where(x => x.PropertyType.GetCustomAttribute<CollectionPortAttribute>() != null))
+                    {
+
+                    }
+                    #endregion
+                    #region 生成DetailPort相关的GET型Javascript
+
+                    #endregion
+                    #region 生成DetailPort相关的INSERT型Javascript
+
+                    #endregion
+                    #region 生成DetailPort相关的EDIT型Javascript
+
+                    #endregion
+                    #region 生成DetailPort相关的DELETE型Javascript
+
+                    #endregion
+                    return Task.FromResult(0);
+                });
             });
+            #endregion
         }
     }
 
