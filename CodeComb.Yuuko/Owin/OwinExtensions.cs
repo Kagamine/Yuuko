@@ -170,8 +170,10 @@ namespace Owin
                                     var DataSourcePagingAttribute = DataSourceType.GetCustomAttribute<PagingAttribute>();
                                     if (DataSourcePagingAttribute != null)
                                     {
-                                        var Page = int.Parse(QueryString[DataSourcePagingAttribute.requestKey]);
-                                        tmp = tmp.Skip(Page).Take(DataSourcePagingAttribute.pageSize);
+                                        int Page = 0;
+                                        if (QueryString[DataSourcePagingAttribute.requestKey] != null)
+                                            Page = int.Parse(QueryString[DataSourcePagingAttribute.requestKey]);
+                                        tmp = tmp.Skip(Page * DataSourcePagingAttribute.pageSize).Take(DataSourcePagingAttribute.pageSize);
                                     }
                                     #endregion
                                     #region 输出JSON
@@ -245,14 +247,6 @@ namespace Owin
                                             {
                                                 ret = ret.Take(int.Parse(QueryString[ViewsCollectionTakeAttribute.requestKey.Trim('$')]));
                                             }
-                                        }
-                                        #endregion
-                                        #region 处理针对视图模型集合的Paging
-                                        var ViewsCollectionPaggingAttribute = DataSourceType.GetCustomAttribute<PagingAttribute>();
-                                        if (ViewsCollectionPaggingAttribute != null)
-                                        {
-                                            var Page = int.Parse(QueryString[ViewsCollectionPaggingAttribute.requestKey]);
-                                            tmp = tmp.Skip(Page).Take(ViewsCollectionPaggingAttribute.pageSize);
                                         }
                                         #endregion
                                     }
@@ -426,7 +420,7 @@ namespace Owin
                             #region 插入操作
                             var NewItem = Activator.CreateInstance(DataModel);
                             var NewItemProperties = NewItem.GetType().GetProperties();
-                            foreach (var np in NewItemProperties)
+                            foreach (var np in NewItemProperties.Where(x=>x.GetCustomAttribute<NotEditableAttribute>() == null))
                             {
                                 if (Form.Get(np.Name) != null)
                                 {
@@ -468,7 +462,7 @@ namespace Owin
                 }
                 #endregion
                 #region 处理修改操作
-                builder.Map("/yuuko/sets/" + p.Name + "/Delete", innerApp =>
+                builder.Map("/yuuko/sets/" + p.Name + "/Edit", innerApp =>
                 {
                     innerApp.Run(cxt => {
                         #region 处理请求
@@ -504,7 +498,7 @@ namespace Owin
                         #endregion
                         #region 修改操作
                         var ItemProperties = ((object)tmp2).GetType().GetProperties();
-                        foreach (var ip in ItemProperties)
+                        foreach (var ip in ItemProperties.Where(x => x.GetCustomAttribute<NotEditableAttribute>() == null))
                         {
                             if (Form.Get(ip.Name) != null)
                             {

@@ -81,6 +81,7 @@
     <Compile Include="Schema\CollectionPortAttribute.cs" />
     <Compile Include="Schema\DataSourceAttribute.cs" />
     <Compile Include="Schema\GroupByAttribute.cs" />
+    <Compile Include="Schema\NotEditableAttribute.cs" />
     <Compile Include="Schema\OrderByAttribute.cs" />
     <Compile Include="Schema\PagingAttribute.cs" />
     <Compile Include="Schema\SelectAttribute.cs" />
@@ -103,9 +104,7 @@
   <ItemGroup>
     <WCFMetadata Include="Service References\" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Hubs\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

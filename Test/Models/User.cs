@@ -9,6 +9,7 @@ namespace Test.Models
     public class User
     {
         [WhereOptional("ID = $id")]
+        [NotEditable]
         public int ID { get; set; }
 
         [SingleBy]

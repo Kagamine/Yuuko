@@ -21,12 +21,14 @@ namespace Test.Models
 
         [Binding("UsersSource")]
         [CollectionPort]
-        public List<UserViewModel> Users { get; set; }
+        public List<User> Users { get; set; }
 
         [Binding("UsersSource")]
         [DetailPort(DetailPortFunction.Edit ,DetailPortFunction.Delete, DetailPortFunction.Insert)]
-        public UserViewModel User { get; set; }
+        public User User { get; set; }
 
+        [OrderBy("ID")]
+        [Paging(10)]
         public DbSet<User> UsersSource { get; set; }
     }
 }

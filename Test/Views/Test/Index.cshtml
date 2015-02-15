@@ -3,10 +3,11 @@
     ViewBag.Title = "View";
 }
 
-<div data-collection="Users" data-identifier="ID">
-    <p class="template users"><span data-field="ID"></span><span data-field="Username"></span><span data-field="Password"></span></p>
+<div data-detail="User" data-method="insert">
+    <p>
+        <input data-field="User.ID" type="text" />
+        <input data-field="User.Username" type="text" />
+        <input data-field="User.Password" type="text" />
+        <a href="javascript:InsertPort('User')">Save</a>
+    </p>
 </div>
-
-<script>
-    LoadFromCollectionPort("Users", null);
-</script>

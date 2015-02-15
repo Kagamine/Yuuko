@@ -12,12 +12,12 @@ namespace CodeComb.Yuuko.Schema
 
         public SingleByAttribute()
         {
-            requestKey = "$key";
+            requestKey = "$k";
         }
 
-        public SingleByAttribute(string RequestKey)
-        {
-            requestKey = RequestKey;
-        }
+        //public SingleByAttribute(string RequestKey)
+        //{
+        //    requestKey = RequestKey;
+        //}
     }
 }
