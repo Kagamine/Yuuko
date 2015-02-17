@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("Yuuko")]
 [assembly: AssemblyDescription("A MFL Developing Framework")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("哈尔滨市码锋窝科技有限公司")]
+[assembly: AssemblyCompany("China Harbin Code Comb Tech Co.,Ltd")]
 [assembly: AssemblyProduct("Yuuko")]
 [assembly: AssemblyCopyright("Copyright ©  2015")]
 [assembly: AssemblyTrademark("Code Comb")]
@@ -32,5 +32,5 @@ using System.Runtime.InteropServices;
 // 可以指定所有这些值，也可以使用“生成号”和“修订号”的默认值，
 // 方法是按如下所示使用“*”: 
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("0.9.0.0")]
-[assembly: AssemblyFileVersion("0.9.0.0")]
+[assembly: AssemblyVersion("0.9.3.0")]
+[assembly: AssemblyFileVersion("0.9.3.0")]

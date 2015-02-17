@@ -49,23 +49,7 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Data.Entity" />
     <Reference Include="System.Web" />
-    <Reference Include="System.Web.Helpers">
-      <HintPath>..\packages\Microsoft.AspNet.WebPages.3.2.3\lib\net45\System.Web.Helpers.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Web.Razor">
-      <HintPath>..\packages\Microsoft.AspNet.Razor.3.2.3\lib\net45\System.Web.Razor.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Web.WebPages">
-      <HintPath>..\packages\Microsoft.AspNet.WebPages.3.2.3\lib\net45\System.Web.WebPages.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Web.WebPages.Deployment">
-      <HintPath>..\packages\Microsoft.AspNet.WebPages.3.2.3\lib\net45\System.Web.WebPages.Deployment.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Web.WebPages.Razor">
-      <HintPath>..\packages\Microsoft.AspNet.WebPages.3.2.3\lib\net45\System.Web.WebPages.Razor.dll</HintPath>
-    </Reference>
     <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
@@ -74,8 +58,8 @@
     <Compile Include="Exceptions\YuukoTokenException.cs" />
     <Compile Include="Helpers\ExpressionHelper.cs" />
     <Compile Include="Linq.cs" />
-    <Compile Include="Owin\Middleware\MapRoutesMiddleware.cs" />
     <Compile Include="Schema\AccessToAttribute.cs" />
+    <Compile Include="Schema\AutoTimeAttribute.cs" />
     <Compile Include="Schema\DbContextAttribute.cs" />
     <Compile Include="Schema\BindingAttribute.cs" />
     <Compile Include="Schema\CollectionPortAttribute.cs" />
@@ -88,11 +72,12 @@
     <Compile Include="Schema\SingleByAttribute.cs" />
     <Compile Include="Schema\DetailPortAttribute.cs" />
     <Compile Include="Schema\SkipAttribute.cs" />
+    <Compile Include="Schema\SpecialFieldAttribute.cs" />
     <Compile Include="Schema\TakeAttribute.cs" />
     <Compile Include="Schema\WhereAttribute.cs" />
     <Compile Include="Schema\WhereOptionalAttribute.cs" />
     <Compile Include="Yuuko.cs" />
-    <Compile Include="YuukoContext.cs" />
+    <Compile Include="PortsContext.cs" />
     <Compile Include="Owin\OwinExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -102,9 +87,8 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <WCFMetadata Include="Service References\" />
+    <Content Include="yuuko.js" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

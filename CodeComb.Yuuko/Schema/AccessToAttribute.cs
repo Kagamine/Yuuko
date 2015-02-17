@@ -7,6 +7,14 @@ using System.Security.Principal;
 
 namespace CodeComb.Yuuko.Schema
 {
+    public enum PortAction
+    {
+        Create,
+        Retrieve,
+        Update,
+        Delete
+    };
+
     public abstract class AccessToAttribute : Attribute
     {
         /// <summary>
@@ -14,7 +22,7 @@ namespace CodeComb.Yuuko.Schema
         /// </summary>
         /// <param name="User"></param>
         /// <returns></returns>
-        public virtual bool AccessCore(IPrincipal User)
+        public virtual bool AccessCore(IPrincipal User, PortAction Action)
         {
             return true;
         }

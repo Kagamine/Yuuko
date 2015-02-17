@@ -3,11 +3,14 @@
     ViewBag.Title = "View";
 }
 
-<div data-detail="User" data-method="insert">
+<div data-detail="User" data-method="edit">
     <p>
         <input data-field="User.ID" type="text" />
         <input data-field="User.Username" type="text" />
         <input data-field="User.Password" type="text" />
-        <a href="javascript:InsertPort('User')">Save</a>
+        <a href="javascript:EditPort('User')">Save</a>
     </p>
 </div>
+<script>
+    Detail.User = "admin";
+</script>

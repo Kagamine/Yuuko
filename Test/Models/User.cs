@@ -18,5 +18,8 @@ namespace Test.Models
 
         public string Password { get; set; }
 
+        [AutoTime]
+        public DateTime Time { get; set; }
+
     }
 }

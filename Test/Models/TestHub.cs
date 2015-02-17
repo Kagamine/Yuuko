@@ -8,7 +8,7 @@ using CodeComb.Yuuko.Schema;
 
 namespace Test.Models
 {
-    public class TestYuukoContext : YuukoContext
+    public class TestYuukoContext : PortsContext
     {
         public TestYuukoContext()
         {
@@ -29,6 +29,7 @@ namespace Test.Models
 
         [OrderBy("ID")]
         [Paging(10)]
+        [Where("ID > 3", typeof(int))]
         public DbSet<User> UsersSource { get; set; }
     }
 }

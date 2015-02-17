@@ -9,13 +9,13 @@ using CodeComb.Yuuko.Schema;
 
 namespace CodeComb.Yuuko
 {
-    public abstract class YuukoContext
+    public abstract class PortsContext
     {
         public static void Register()
         {
             //获取注册者程序集中Yuuko上下文类
             var classes = (from t in Assembly.GetCallingAssembly().GetTypes()
-                                                   where t.IsClass && t.BaseType == typeof(YuukoContext)
+                                                   where t.IsClass && t.BaseType == typeof(PortsContext)
                                                    select t).Single();
 
             //获取上下文类中的所有属性

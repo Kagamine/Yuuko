@@ -21,6 +21,8 @@ namespace Owin
     public static class OwinExtensions
     {
         public static IEnumerable<PropertyInfo> Properties;
+        private static object Instance;
+        private static string JSCache = null;
         public static IAppBuilder MapYuuko(this IAppBuilder builder)
         {
             builder.RequireAspNetSession();
@@ -32,12 +34,12 @@ namespace Owin
             foreach (var asm in assemblies)
             {
                 var classes = (from t in asm.GetTypes()
-                               where t.IsClass && t.BaseType == typeof(YuukoContext)
+                               where t.IsClass && t.BaseType == typeof(PortsContext)
                                select t).SingleOrDefault();
                 if (classes != null)
                     ContextType = classes;
             }
-            var Instance = Activator.CreateInstance(ContextType);
+            Instance = Activator.CreateInstance(ContextType);
             Properties = Instance.GetType().GetProperties();
             #endregion
             #region GET型逻辑处理
@@ -65,7 +67,7 @@ namespace Owin
                                 if (AccessToAttribute != null)//处理权限校验逻辑
                                 {
                                     Type AccessToAttributeType = typeof(AccessToAttribute);
-                                    var flag = (bool)AccessToAttributeType.GetMethod("AccessCore").Invoke(AccessToAttribute, new object[] { cxt.Authentication.User }); //调用AccessCore校验
+                                    var flag = (bool)AccessToAttributeType.GetMethod("AccessCore").Invoke(AccessToAttribute, new object[] { cxt.Authentication.User, PortAction.Retrieve }); //调用AccessCore校验
                                     if (!flag)
                                     {
                                         cxt.Response.ContentType = "text/json";
@@ -88,6 +90,12 @@ namespace Owin
                                                  select f;//获取数据模型字段
                                     #endregion
                                     #region Where与WhereOptional特性处理
+                                    var DataSourceWhereAttribute = DataSourceType.GetCustomAttribute<WhereAttribute>();
+                                    if (DataSourceWhereAttribute != null)
+                                    {
+                                        var expression = ExpressionHelper.ReplaceQueryString(QueryString, DataSourceWhereAttribute.predicate, DataSourceWhereAttribute.types, typeof(string), ref DataSourceWhereAttribute.values); //获取表达式
+                                        tmp = tmp.Where(expression, DataSourceWhereAttribute.values);
+                                    }
                                     foreach (var f in fields.Where(x => x.GetCustomAttribute<WhereAttribute>() != null)) //处理Where逻辑
                                     {
                                         var WhereAttribute = f.GetCustomAttribute<WhereAttribute>(); //获取Where特性
@@ -341,7 +349,7 @@ namespace Owin
                             if (AccessToAttribute != null)//处理权限校验逻辑
                             {
                                 Type AccessToAttributeType = typeof(AccessToAttribute);
-                                var flag = (bool)AccessToAttributeType.GetMethod("AccessCore").Invoke(AccessToAttribute, new object[] { cxt.Authentication.User }); //调用AccessCore校验
+                                var flag = (bool)AccessToAttributeType.GetMethod("AccessCore").Invoke(AccessToAttribute, new object[] { cxt.Authentication.User, PortAction.Delete }); //调用AccessCore校验
                                 if (!flag)
                                 {
                                     cxt.Response.ContentType = "text/json";
@@ -402,7 +410,7 @@ namespace Owin
                             if (AccessToAttribute != null)//处理权限校验逻辑
                             {
                                 Type AccessToAttributeType = typeof(AccessToAttribute);
-                                var flag = (bool)AccessToAttributeType.GetMethod("AccessCore").Invoke(AccessToAttribute, new object[] { cxt.Authentication.User }); //调用AccessCore校验
+                                var flag = (bool)AccessToAttributeType.GetMethod("AccessCore").Invoke(AccessToAttribute, new object[] { cxt.Authentication.User, PortAction.Create }); //调用AccessCore校验
                                 if (!flag)
                                 {
                                     cxt.Response.ContentType = "text/json";
@@ -437,6 +445,16 @@ namespace Owin
                                 {
                                     np.SetValue(NewItem, Guid.NewGuid());
                                 }
+                                else if (np.PropertyType == typeof(DateTime))
+                                {
+                                    np.SetValue(NewItem, DateTime.Now); //特别处理一下DateTime问题
+                                }
+                            }
+                            foreach (var np in NewItemProperties.Where(x => x.GetCustomAttributes().Where(y=>y.GetType().BaseType == typeof(SpecialFieldAttribute)).Count() > 0))
+                            {
+                                var attribute = np.GetCustomAttributes().Where(y => y.GetType().BaseType == typeof(SpecialFieldAttribute)).Single();
+                                var val = attribute.GetType().GetMethod("SetFieldValue").Invoke(attribute, new object[] { null, DetailPortFunction.Insert });
+                                np.SetValue(NewItem, val);
                             }
                             DataSource.GetType().GetMethod("Add").Invoke(DataSource, new object[] { NewItem });
                             var DbContext = (from pro in Properties
@@ -469,7 +487,7 @@ namespace Owin
                         if (AccessToAttribute != null)//处理权限校验逻辑
                         {
                             Type AccessToAttributeType = typeof(AccessToAttribute);
-                            var flag = (bool)AccessToAttributeType.GetMethod("AccessCore").Invoke(AccessToAttribute, new object[] { cxt.Authentication.User }); //调用AccessCore校验
+                            var flag = (bool)AccessToAttributeType.GetMethod("AccessCore").Invoke(AccessToAttribute, new object[] { cxt.Authentication.User, PortAction.Update}); //调用AccessCore校验
                             if (!flag)
                             {
                                 cxt.Response.ContentType = "text/json";
@@ -512,6 +530,12 @@ namespace Owin
                                 }
                             }
                         }
+                        foreach (var ip in ItemProperties.Where(x => x.GetCustomAttributes().Where(y => y.GetType().BaseType == typeof(SpecialFieldAttribute)).Count() > 0))
+                        {
+                            var attribute = ip.GetCustomAttributes().Where(y => y.GetType().BaseType == typeof(SpecialFieldAttribute)).Single();
+                            var val = attribute.GetType().GetMethod("SetFieldValue").Invoke(attribute, new object[] { ip.GetValue(tmp2) , DetailPortFunction.Edit });
+                            ip.SetValue(tmp2, val);
+                        }
                         var DbContext = (from pro in Properties
                                          where pro.GetCustomAttribute<DbContextAttribute>() != null
                                          select pro).SingleOrDefault();
@@ -535,49 +559,35 @@ namespace Owin
                 #endregion
             }
             #endregion
-            #region 生成前台js
-            return builder.Map("/yuuko/js", app => {
-                app.Run(cxt=>
-                {
+            #region JS逻辑
+            builder.Map("/yuuko/js", app =>
+            {
+                app.Run(cxt=> {
                     cxt.Response.ContentType = "application/x-javascript";
-                    StringBuilder js = new StringBuilder();
-                    cxt.Response.Write(string.Format("var YuukoToken = \"{0}\";\r\n", HttpContext.Current.Session["YuukoToken"].ToString()));
-                    js.AppendLine("var lock = false;");
-                    js.AppendLine("var CurrentPage = 0;");
-                    js.AppendLine("function LoadFromCollectionPort(port, obj, func) {");
-                    js.AppendLine("    if(lock) return;");
-                    js.AppendLine("    lock = true;");
-                    js.AppendLine("    yuukoOnLoading();");
-                    js.AppendLine("    obj.YuukoToken = YuukoToken;");
-                    js.AppendLine("    $.getJSON('/yuuko/gets/' + port, obj, function(data) {");
-                    js.AppendLine("        if(data.length == 0) lock = true;");
-                    js.AppendLine("            $('[data-collection=\"'+port\"]')");
-                    js.AppendLine("        yuukoOnLoaded();");
-                    js.AppendLine("        lock = false;");
-                    js.AppendLine("    });");
-                    js.AppendLine("}");
-                    #region 生成CollectionPort相关的Javascript
-                    foreach (var p in Properties.Where(x => x.PropertyType.GetCustomAttribute<CollectionPortAttribute>() != null))
+                    if (JSCache != null)
                     {
-
+                        return cxt.Response.WriteAsync(JSCache);
                     }
-                    #endregion
-                    #region 生成DetailPort相关的GET型Javascript
-
-                    #endregion
-                    #region 生成DetailPort相关的INSERT型Javascript
-
-                    #endregion
-                    #region 生成DetailPort相关的EDIT型Javascript
-
-                    #endregion
-                    #region 生成DetailPort相关的DELETE型Javascript
-
-                    #endregion
-                    return Task.FromResult(0);
+                    else
+                    {
+                        var tmp = new StringBuilder();
+                        foreach (var p in Properties.Where(x => x.GetCustomAttribute<CollectionPortAttribute>() != null)) //遍历上下文属性
+                        {
+                            tmp.AppendLine("Collection." + p.Name + " = {};");
+                            tmp.AppendLine("CollectionEvents." + p.Name + " = {};");
+                        }
+                        foreach (var p in Properties.Where(x => x.GetCustomAttribute<DetailPortAttribute>() != null)) //遍历上下文属性
+                        {
+                            tmp.AppendLine("Detail." + p.Name + " = {};");
+                            tmp.AppendLine("DetailEvents." + p.Name + " = {};");
+                        }
+                        JSCache = tmp.ToString();
+                        return cxt.Response.WriteAsync(JSCache);
+                    }
                 });
             });
             #endregion
+            return builder;
         }
     }
 
