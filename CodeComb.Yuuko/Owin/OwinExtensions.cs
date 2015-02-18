@@ -187,9 +187,10 @@ namespace Owin
                                     #region 输出JSON
                                     tmp = ((IEnumerable<object>)tmp).ToList();
                                     //考虑是否需要转换为视图模型
-                                    var ret = (IEnumerable)Activator.CreateInstance((typeof(List<>).MakeGenericType(ViewModelType))); //使用反射创建泛型容器
-                                    if (ViewModelType != DataModel)
+                                    IEnumerable ret;
+                                    if (ViewModelType != DataModel && ViewModelType != typeof(object))
                                     {
+                                        ret = (IEnumerable)Activator.CreateInstance((typeof(List<>).MakeGenericType(ViewModelType))); //使用反射创建泛型容器
                                         #region 将数据源数据转换为视图模型集合
                                         foreach (var o in (IEnumerable)tmp)
                                             ((IList)ret).Add(Activator.CreateInstance(ViewModelType, o));
@@ -289,7 +290,7 @@ namespace Owin
                                     #region 输出JSON
                                     //考虑是否需要把数据源单体转换成视图模型类型
                                     dynamic ret;
-                                    if (ViewModelType != DataModel)
+                                    if (ViewModelType != DataModel && ViewModelType != typeof(object))
                                     {
                                         ret = Activator.CreateInstance(ViewModelType, tmp2);
                                     }
