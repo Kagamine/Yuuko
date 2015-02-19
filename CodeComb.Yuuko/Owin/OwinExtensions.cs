@@ -437,6 +437,10 @@ namespace Owin
                                     {
                                         np.SetValue(NewItem, Form.Get(np.Name).ToString());
                                     }
+                                    else if (np.PropertyType.IsGenericType)
+                                    {
+                                        np.SetValue(NewItem, Convert.ChangeType(Form.Get(np.Name).ToString(), np.PropertyType.GenericTypeArguments.Single()));
+                                    }
                                     else
                                     {
                                         np.SetValue(NewItem, Convert.ChangeType(Form.Get(np.Name).ToString(), np.PropertyType));
@@ -524,6 +528,10 @@ namespace Owin
                                 if (ip.PropertyType == typeof(string))
                                 {
                                     ip.SetValue(tmp2, Form.Get(ip.Name).ToString());
+                                }
+                                else if (ip.PropertyType.IsGenericType)
+                                {
+                                    ip.SetValue(tmp2, Convert.ChangeType(Form.Get(ip.Name).ToString(), ip.PropertyType.GenericTypeArguments.Single()));
                                 }
                                 else
                                 {
