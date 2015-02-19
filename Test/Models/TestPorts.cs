@@ -24,7 +24,7 @@ namespace Test.Models
         public List<User> Users { get; set; }
 
         [Binding("UsersSource")]
-        [DetailPort(DetailPortFunction.Edit ,DetailPortFunction.Delete, DetailPortFunction.Insert)]
+        [DetailPort(DetailPortFunction.Edit, DetailPortFunction.Delete, DetailPortFunction.Insert)]
         public User User { get; set; }
 
         [OrderBy("ID")]

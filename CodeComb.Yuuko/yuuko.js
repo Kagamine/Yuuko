@@ -76,11 +76,18 @@ function LoadFromDetailPort(port) {
         } catch (e) { }
         $.getJSON("/yuuko/gets/" + port, {
             k: Detail[port]
-        }, function (data) {
+        },
+        function (data) {
             var detail = DetailTemplates[port].toString();
             for (var x in data) "undefined" != typeof x && (detail = detail.replaceAll("\\$" + port + "." + x, data[x]));
             detail = $(detail);
+            $("[data-detail='" + port + "']")[0].outerHTML = detail[0].outerHTML;
+            detail = $("[data-detail='" + port + "']");
             for (var x in data) if ("undefined" != typeof x) {
+                try {
+                    detail.find("select[data-field='" + port + "." + x + "']").append($("<option>Current</option>").val(data[x]));
+                }
+                catch (e) { }
                 try {
                     detail.find("[data-field='" + port + "." + x + "']").val(data[x].toString())
                 } catch (e) { }
@@ -93,12 +100,11 @@ function LoadFromDetailPort(port) {
                     } catch (e) { }
                 }
             }
-            $("[data-detail='" + port + "']")[0].outerHTML = detail[0].outerHTML;
+            DetailLocks[port] = !1;
             try {
                 DetailEvents[port].onLoaded()
             } catch (e) { }
-            DetailLocks[port] = !1;
-        })
+        });
     }
 }
 function DetailKeyTo(port, key) {
@@ -116,9 +122,10 @@ function EditPort(port) {
             };
             $(this).find("[data-field]").each(function () {
                 $(this).attr("data-field").indexOf(port + ".") >= 0 && null != $(this).val() && (edit[$(this).attr("data-field").replace(port + ".", "")] = $(this).val())
-            }), $.post("/yuuko/sets/" + port + "/edit", edit, function (result) {
+            });
+            $.post("/yuuko/sets/" + port + "/edit", edit, function (result) {
                 try {
-                    DetailEvents[port].onEdited(port, result)
+                    DetailEvents[port].onEdited(port, result);
                 } catch (e) { }
             })
         }
@@ -163,6 +170,7 @@ var Collection = {},
 	DetailLocks = {},
 	DetailEvents = {},
 	DetailTemplates = {};
+
 String.prototype.replaceAll = function (str1, str2) {
     return this.replace(new RegExp(str1, "gm"), str2)
 }, $(window).scroll(function () {
@@ -170,12 +178,13 @@ String.prototype.replaceAll = function (str1, str2) {
         CollectionFlowNext($(this).attr("data-collection"))
     })
 }), $(document).ready(function () {
-    $("[data-collection]").unbind().each(function () {
-        LoadFromCollectionPort($(this).attr("data-collection"))
-    }), $("[data-detail]").unbind().each(function () {
-        if ($(this).attr("data-method") == null || $(this).attr("data-method") == "insert") {
+    $("[data-detail]").unbind().each(function () {
+        if ($(this).attr("data-method") == null || $(this).attr("data-method") != "insert") {
             DetailTemplates[$(this).attr("data-detail")] = $(this)[0].outerHTML;
             LoadFromDetailPort($(this).attr("data-detail"));
         }
-    })
+    });
+    $("[data-collection]").unbind().each(function () {
+        LoadFromCollectionPort($(this).attr("data-collection"))
+    });
 });

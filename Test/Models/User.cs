@@ -21,5 +21,6 @@ namespace Test.Models
         [AutoTime]
         public DateTime Time { get; set; }
 
+        public int? nab { get; set; }
     }
 }

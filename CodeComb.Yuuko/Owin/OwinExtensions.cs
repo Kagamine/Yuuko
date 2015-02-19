@@ -284,7 +284,10 @@ namespace Owin
                                     #region 处理SingleBy特性
                                     var SingleByAttribute = KeyField.GetCustomAttribute<SingleByAttribute>();
                                     string requestKey = QueryString[SingleByAttribute.requestKey.Trim('$')];
-                                    tmp = tmp.Where(KeyField.Name + " =@0", Convert.ChangeType(requestKey, KeyField.PropertyType));
+                                    if (KeyField.PropertyType == typeof(Guid))
+                                        tmp = tmp.Where(KeyField.Name + " =@0", Guid.Parse(requestKey));
+                                    else
+                                        tmp = tmp.Where(KeyField.Name + " =@0", Convert.ChangeType(requestKey, KeyField.PropertyType));
                                     var tmp2 = ((IEnumerable<dynamic>)tmp).SingleOrDefault();
                                     #endregion
                                     #region 输出JSON
@@ -368,8 +371,10 @@ namespace Owin
                             #region 处理SingleBy特性
                             var SingleByAttribute = KeyField.GetCustomAttribute<SingleByAttribute>();
                             string requestKey = Form.Get(SingleByAttribute.requestKey.Trim('$'));
-                            tmp = tmp.Where(KeyField.Name + " =@0", Convert.ChangeType(requestKey, KeyField.PropertyType));
-                            var tmp2 = ((IEnumerable<dynamic>)tmp).SingleOrDefault();
+                            if (KeyField.PropertyType == typeof(Guid))
+                                tmp = tmp.Where(KeyField.Name + " =@0", Guid.Parse(requestKey));
+                            else
+                                tmp = tmp.Where(KeyField.Name + " =@0", Convert.ChangeType(requestKey, KeyField.PropertyType)); var tmp2 = ((IEnumerable<dynamic>)tmp).SingleOrDefault();
                             if (tmp2 == null)
                             {
                                 cxt.Response.ContentType = "text/json";
@@ -429,24 +434,36 @@ namespace Owin
                             #region 插入操作
                             var NewItem = Activator.CreateInstance(DataModel);
                             var NewItemProperties = NewItem.GetType().GetProperties();
-                            foreach (var np in NewItemProperties.Where(x=>x.GetCustomAttribute<NotEditableAttribute>() == null))
+                            foreach (var np in NewItemProperties)
                             {
-                                if (Form.Get(np.Name) != null)
+                                var NotEditableAttribute = np.GetCustomAttribute<NotEditableAttribute>();
+                                if (NotEditableAttribute == null)
                                 {
-                                    if (np.PropertyType == typeof(string))
+                                    if (Form.Get(np.Name) != null)
                                     {
-                                        np.SetValue(NewItem, Form.Get(np.Name).ToString());
-                                    }
-                                    else if (np.PropertyType.IsGenericType)
-                                    {
-                                        np.SetValue(NewItem, Convert.ChangeType(Form.Get(np.Name).ToString(), np.PropertyType.GenericTypeArguments.Single()));
-                                    }
-                                    else
-                                    {
-                                        np.SetValue(NewItem, Convert.ChangeType(Form.Get(np.Name).ToString(), np.PropertyType));
+                                        try
+                                        {
+                                            if (np.PropertyType == typeof(string))
+                                            {
+                                                np.SetValue(NewItem, Form.Get(np.Name).ToString());
+                                            }
+                                            else if (np.PropertyType.IsGenericType)
+                                            {
+                                                np.SetValue(NewItem, Convert.ChangeType(Form.Get(np.Name).ToString(), np.PropertyType.GenericTypeArguments.Single()));
+                                            }
+                                            else
+                                            {
+                                                np.SetValue(NewItem, Convert.ChangeType(Form.Get(np.Name).ToString(), np.PropertyType));
+                                            }
+                                        }
+                                        catch
+                                        {
+                                            np.SetValue(NewItem, null);
+                                        }
                                     }
                                 }
-                                else if (np.PropertyType == typeof(Guid)) //特别处理一下GUID问题
+
+                                if (np.PropertyType == typeof(Guid)) //特别处理一下GUID问题
                                 {
                                     np.SetValue(NewItem, Guid.NewGuid());
                                 }
@@ -510,8 +527,10 @@ namespace Owin
                         #region 处理SingleBy特性
                         var SingleByAttribute = KeyField.GetCustomAttribute<SingleByAttribute>();
                         string requestKey = Form.Get(SingleByAttribute.requestKey.Trim('$'));
-                        tmp = tmp.Where(KeyField.Name + " =@0", Convert.ChangeType(requestKey, KeyField.PropertyType));
-                        var tmp2 = ((IEnumerable<dynamic>)tmp).SingleOrDefault();
+                        if (KeyField.PropertyType == typeof(Guid))
+                            tmp = tmp.Where(KeyField.Name + " =@0", Guid.Parse(requestKey));
+                        else
+                            tmp = tmp.Where(KeyField.Name + " =@0", Convert.ChangeType(requestKey, KeyField.PropertyType)); var tmp2 = ((IEnumerable<dynamic>)tmp).SingleOrDefault();
                         if (tmp2 == null)
                         {
                             cxt.Response.ContentType = "text/json";
@@ -525,17 +544,24 @@ namespace Owin
                         {
                             if (Form.Get(ip.Name) != null)
                             {
-                                if (ip.PropertyType == typeof(string))
+                                try
                                 {
-                                    ip.SetValue(tmp2, Form.Get(ip.Name).ToString());
+                                    if (ip.PropertyType == typeof(string))
+                                    {
+                                        ip.SetValue(tmp2, Form.Get(ip.Name).ToString());
+                                    }
+                                    else if (ip.PropertyType.IsGenericType)
+                                    {
+                                        ip.SetValue(tmp2, Convert.ChangeType(Form.Get(ip.Name).ToString(), ip.PropertyType.GenericTypeArguments.Single()));
+                                    }
+                                    else
+                                    {
+                                        ip.SetValue(tmp2, Convert.ChangeType(Form.Get(ip.Name).ToString(), ip.PropertyType));
+                                    }
                                 }
-                                else if (ip.PropertyType.IsGenericType)
+                                catch
                                 {
-                                    ip.SetValue(tmp2, Convert.ChangeType(Form.Get(ip.Name).ToString(), ip.PropertyType.GenericTypeArguments.Single()));
-                                }
-                                else
-                                {
-                                    ip.SetValue(tmp2, Convert.ChangeType(Form.Get(ip.Name).ToString(), ip.PropertyType));
+                                    ip.SetValue(tmp2, null);
                                 }
                             }
                         }

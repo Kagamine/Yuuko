@@ -5,7 +5,7 @@ VisualStudioVersion = 14.0.22310.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeComb.Yuuko", "CodeComb.Yuuko\CodeComb.Yuuko.csproj", "{212ABE3E-6605-4DB7-BE46-DC75EA62BFFC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebForm", "WebForm\WebForm.csproj", "{E0A66F60-496E-4D86-BB1B-2394C6E09761}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "Test\Test.csproj", "{659A4B2A-8CF0-4661-BEE8-9EBD137A199E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +17,10 @@ Global
 		{212ABE3E-6605-4DB7-BE46-DC75EA62BFFC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{212ABE3E-6605-4DB7-BE46-DC75EA62BFFC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{212ABE3E-6605-4DB7-BE46-DC75EA62BFFC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E0A66F60-496E-4D86-BB1B-2394C6E09761}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E0A66F60-496E-4D86-BB1B-2394C6E09761}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E0A66F60-496E-4D86-BB1B-2394C6E09761}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E0A66F60-496E-4D86-BB1B-2394C6E09761}.Release|Any CPU.Build.0 = Release|Any CPU
+		{659A4B2A-8CF0-4661-BEE8-9EBD137A199E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{659A4B2A-8CF0-4661-BEE8-9EBD137A199E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{659A4B2A-8CF0-4661-BEE8-9EBD137A199E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{659A4B2A-8CF0-4661-BEE8-9EBD137A199E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
