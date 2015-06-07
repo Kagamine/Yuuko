@@ -8,7 +8,7 @@ namespace CodeComb.Yuuko.Schema
 {
     public class AutoTimeAttribute : SpecialFieldAttribute
     {
-        public override object SetFieldValue(object Value, DetailPortFunction Method)
+        public override object SetFieldValue(object Value, object DataSource, DetailPortFunction Method)
         {
             return DateTime.Now;
         }

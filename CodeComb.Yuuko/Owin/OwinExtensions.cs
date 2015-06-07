@@ -475,7 +475,7 @@ namespace Owin
                             foreach (var np in NewItemProperties.Where(x => x.GetCustomAttributes().Where(y=>y.GetType().BaseType == typeof(SpecialFieldAttribute)).Count() > 0))
                             {
                                 var attribute = np.GetCustomAttributes().Where(y => y.GetType().BaseType == typeof(SpecialFieldAttribute)).Single();
-                                var val = attribute.GetType().GetMethod("SetFieldValue").Invoke(attribute, new object[] { null, DetailPortFunction.Insert });
+                                var val = attribute.GetType().GetMethod("SetFieldValue").Invoke(attribute, new object[] { null,DataSource,  DetailPortFunction.Insert });
                                 np.SetValue(NewItem, val);
                             }
                             DataSource.GetType().GetMethod("Add").Invoke(DataSource, new object[] { NewItem });
@@ -568,7 +568,7 @@ namespace Owin
                         foreach (var ip in ItemProperties.Where(x => x.GetCustomAttributes().Where(y => y.GetType().BaseType == typeof(SpecialFieldAttribute)).Count() > 0))
                         {
                             var attribute = ip.GetCustomAttributes().Where(y => y.GetType().BaseType == typeof(SpecialFieldAttribute)).Single();
-                            var val = attribute.GetType().GetMethod("SetFieldValue").Invoke(attribute, new object[] { ip.GetValue(tmp2) , DetailPortFunction.Edit });
+                            var val = attribute.GetType().GetMethod("SetFieldValue").Invoke(attribute, new object[] { ip.GetValue(tmp2), DataSource , DetailPortFunction.Edit });
                             ip.SetValue(tmp2, val);
                         }
                         var DbContext = (from pro in Properties

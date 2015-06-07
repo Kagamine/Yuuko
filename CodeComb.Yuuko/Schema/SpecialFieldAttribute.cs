@@ -8,7 +8,7 @@ namespace CodeComb.Yuuko.Schema
 {
     public abstract class SpecialFieldAttribute : Attribute
     {
-        public virtual object SetFieldValue(object Value, DetailPortFunction Method)
+        public virtual object SetFieldValue(object Value, object DataSource, DetailPortFunction Method)
         {
             return Value;
         }
